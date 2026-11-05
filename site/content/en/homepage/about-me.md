@@ -9,13 +9,15 @@ Neither embedded figure shortcode, nor Markdown hook were able to render image f
 You would have to .Resouces.GetMatch via custom shortcode.
 ![Jane Doe](/images/asset-happy-ethnic-woman-sitting-at-table-with-laptop-3769021.jpg) 
 -->
-![Jane Doe](images/static-happy-ethnic-woman-sitting-at-table-with-laptop-3769021.jpg)
 See DE language for more examples of image management. There are multiple approaches.
 
-##### Professional Experience
+##### 저는...
 
-A lot, but let us get into the details with some lorem ipsum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent feugiat lectus et magna placerat tincidunt. Nullam sit amet lectus vitae elit mollis rhoncus non eget lorem. Ut tempor sed dui quis volutpat.
+JBNU에서 CSAI를 전공중인 김진우입니다.
+현재 AI를 이용해 간단한 서비스나 프로그램을 개발하는데 관심이 있습니다. 
+군 복무 중 아이디어 해커톤 프로그램에 참여하였는데 기획하고 뭔가를 모델링하고 개발하는 과정이 즐거웠던 기억이 있어 앞으로도 비슷한 활동을 해보고자 합니다.
 
 ----
 
-In ultrices, est at lobortis pretium, magna quam mollis neque, id viverra odio est sit amet lorem. Mauris efficitur nunc vel lectus porttitor, sit amet sodales quam eleifend. Duis et felis ut mauris dignissim efficitur. Aliquam non sem eros. Integer elit ante, bibendum id hendrerit vitae, vestibulum eget risus. Nunc efficitur nisl in iaculis vestibulum.
+##### 그 다음은?
+실무에서는 어떤식으로 기획이 이루어지고 그것이 개발로 이어지는지 알아보고 싶습니다. 결과적으로 제가 처음부터 끝까지 총괄하는 1인 개발을 하는것이 최종 목표입니다.
