@@ -9,7 +9,7 @@ defaultContentLanguage = "en"
 
 
 # The browser tab name
-title = "JIN WOO - JBNU Computer Science & Artificial Intelligence"
+title = "김진우의 포트폴리오 웹"
 
 # In order to add version information in the page's footer set to true.
 # enableGitInfo = true
