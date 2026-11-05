@@ -3,13 +3,13 @@ baseURL = "https://uuniz23.github.io/MyPortfolio/#site-head"
 # This is a "one page"-website, so we do not need these kinds of pages...
 disableKinds = ["section", "taxonomy", "term", "rss", "robotsTXT"]
 
-defaultContentLanguage = "en"
+defaultContentLanguage = "ko"
 
 # The name of this wonderful theme ;-).
 
 
 # The browser tab name
-title = "Jane Doe - Nutrition Coach & Chef Consultant"
+title = "JIN WOO - JBNU Computer Science & Artificial Intelligence"
 
 # In order to add version information in the page's footer set to true.
 # enableGitInfo = true
@@ -38,10 +38,10 @@ enableEmoji = true
     # Another "title" :-). This one is used as the site_name on the Hugo's internal
     # opengraph structured data template.
     # See https://ogp.me/ and https://gohugo.io/templates/internal#open-graph.
-    title = "Jane Doe - Nutrition Coach & Chef Consultant"
+    title = "JIN WOO - JBNU Computer Science & Artificial Intelligence"
 
     # The "description" of your website. This is used in the meta data of your generated html.
-    description = "Nutrition Coach & Chef Consultant"
+    description = "Science & Artificial Intelligence"
 
     # Show a menu of languages available
     language_menu = true
