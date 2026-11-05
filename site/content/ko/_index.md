@@ -15,6 +15,6 @@ header_subheadline: "<b>Solo Developer</b>"
 # Add a 'Go back to top' item to the navigation menu
 # Title: name of navigation menu entry
 # Weight (i. e. position in menu): none = no menu entry, first = add as first entry, last = ad as last entry
-nav_to_top_title: "Return To Top"
+nav_to_top_title: "처음으로"
 nav_to_top_weight: last
 ---
