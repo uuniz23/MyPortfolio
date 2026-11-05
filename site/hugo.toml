@@ -3,7 +3,7 @@ baseURL = "https://uuniz23.github.io/MyPortfolio/#site-head"
 # This is a "one page"-website, so we do not need these kinds of pages...
 disableKinds = ["section", "taxonomy", "term", "rss", "robotsTXT"]
 
-defaultContentLanguage = "ko"
+defaultContentLanguage = "en"
 
 # The name of this wonderful theme ;-).
 
@@ -44,7 +44,7 @@ enableEmoji = true
     description = "Science & Artificial Intelligence"
 
     # Show a menu of languages available
-    language_menu = true
+    language_menu = false
 
     # Show also a language menu item for the current language, if false only
     # show the remaining languages
@@ -52,7 +52,7 @@ enableEmoji = true
 
     # A "copyright"-line to be added at the bottom of the page.
     # Hint: Plain HTML is supported in here as well. So you may e.g. add a link to your legal imprint-page.
-    copyright = "© Jane Doe"
+    copyright = "©JINWOO KIM"
 
     # This theme will, by default, inject a design-by-line at the bottom of the page.
     # You can turn it off, but we would really appreciate if you don’t :-)
@@ -109,9 +109,3 @@ enableEmoji = true
     weight = 10
     label = "English"
     contentDir = "content/en"
-
-  [languages.de]
-    title = "Erika Musterfrau - Ernährungshilfe & Kochberatung"
-    weight = 20
-    contentDir = "content/de"
-    label = "Deutsch"
