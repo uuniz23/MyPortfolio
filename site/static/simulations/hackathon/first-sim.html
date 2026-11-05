@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>버스 노선 최적화 유전 알고리즘 시뮬레이션 (Canvas Ver.)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+        }
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col lg:flex-row items-center justify-center min-h-screen p-4">
+
+    <div class="w-full lg:w-1/3 xl:w-1/4 p-4">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">버스 노선 최적화</h1>
+            <p class="text-sm text-gray-600 mb-6">유전 알고리즘 시뮬레이션 (O/D 매트릭스 적용)</p>
+            
+            <div class="space-y-4 text-sm">
+                <div>
+                    <h3 class="font-semibold text-gray-700">시뮬레이션 정보</h3>
+                    <p class="text-gray-600">서대문구 ↔ 종로구</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-700">세대 (Generation)</h3>
+                    <p id="generation-info" class="text-blue-600 font-mono text-lg font-medium">0 / 200</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-700">최고 적합도 (Best Fitness)</h3>
+                    <p id="fitness-info" class="text-green-600 font-mono text-lg font-medium">0.00</p>
+                </div>
+                 <div>
+                    <h3 class="font-semibold text-gray-700">최적 노선 (경유지 수)</h3>
+                    <p id="route-stops-info" class="text-gray-600 font-mono">-</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-700">최적 노선 경로</h3>
+                    <p id="route-info" class="text-gray-600 text-xs break-words h-28 overflow-y-auto bg-gray-50 p-2 rounded-md border">-</p>
+                </div>
+            </div>
+            
+            <button id="start-button" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-transform transform hover:scale-105">
+                시뮬레이션 시작
+            </button>
+        </div>
+    </div>
+
+    <div class="w-full lg:w-2/3 xl:w-3/4 p-4">
+        <div class="relative">
+            <canvas id="simulation-canvas" class="w-full bg-white rounded-xl shadow-lg aspect-video"></canvas>
+            <div id="loading-overlay" class="absolute inset-0 bg-white bg-opacity-75 flex-col items-center justify-center rounded-xl hidden">
+                <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4"></div>
+                <p id="loading-text" class="text-gray-700 font-semibold text-lg">초기 노선 생성 중...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. SETUP ---
+        const canvas = document.getElementById('simulation-canvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('start-button');
+        const generationInfo = document.getElementById('generation-info');
+        const fitnessInfo = document.getElementById('fitness-info');
+        const routeInfo = document.getElementById('route-info');
+        const routeStopsInfo = document.getElementById('route-stops-info');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
+
+        let animationFrameId;
+
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        
+        // --- 2. GENETIC ALGORITHM PARAMETERS ---
+        const JONGNO_HUBS = ['종각', '종로3가', '종로5가', '동대문', '동묘앞', '경복궁', '안국', '혜화', '서대문', '광화문', '창신'];
+        const SEODAEMUN_HUBS = ['충정로', '홍제', '무악재', '독립문'];
+        
+        const K_CONSTANT = 2;
+        const POPULATION_SIZE = JONGNO_HUBS.length * SEODAEMUN_HUBS.length * K_CONSTANT;
+        const NUM_GENERATIONS = 200;
+        const MIN_STOPS = 3;
+        const MAX_STOPS = 20;
+        
+        const AVG_SPEED_KMH = 18.0;
+        const AVG_STOP_TIME_S = 9.54;
+        
+        const ELITISM_RATE = 0.1;
+
+        const WEIGHTS = { P: 0.10, T: 0.30, D: 0.35, S: 0.10, O: 0.15 };
+
+        // --- 3. VIRTUAL DATA SETUP ---
+        const STOPS_DATA = {};
+        const SUBWAY_LINES = [];
+        let GENERAL_STOP_NAMES = [];
+        const OD_MATRIX = {}; // [수정됨] O/D 매트릭스 전역 변수
+
+        function setupVirtualData() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const PADDING = 60;
+            
+            Object.keys(STOPS_DATA).forEach(key => delete STOPS_DATA[key]);
+            SUBWAY_LINES.length = 0;
+            GENERAL_STOP_NAMES = [];
+            Object.keys(OD_MATRIX).forEach(key => delete OD_MATRIX[key]);
+
+            for (let i = 0; i < 200; i++) {
+                const stopName = `일반정류장_${i}`;
+                STOPS_DATA[stopName] = {
+                    name: stopName,
+                    x: PADDING + Math.random() * (width - PADDING * 2),
+                    y: PADDING + Math.random() * (height - PADDING * 2),
+                    passengers: Math.floor(Math.random() * 400) + 50,
+                    // [삭제됨] 개별 OD 점수 삭제
+                    isHub: false,
+                    district: Math.random() < 0.5 ? '종로구' : '서대문구'
+                };
+                GENERAL_STOP_NAMES.push(stopName);
+            }
+
+            SEODAEMUN_HUBS.forEach((hubName, i) => {
+                STOPS_DATA[hubName] = {
+                    name: hubName, x: PADDING,
+                    y: PADDING + (i + 1) * (height - PADDING * 2) / (SEODAEMUN_HUBS.length + 1),
+                    passengers: Math.floor(Math.random() * 1500) + 500,
+                    isHub: true, district: '서대문구'
+                };
+            });
+            JONGNO_HUBS.forEach((hubName, i) => {
+                STOPS_DATA[hubName] = {
+                    name: hubName, x: width - PADDING,
+                    y: PADDING + (i + 1) * (height - PADDING * 2) / (JONGNO_HUBS.length + 1),
+                    passengers: Math.floor(Math.random() * 1500) + 500,
+                    isHub: true, district: '종로구'
+                };
+            });
+
+            for (let i = 0; i < 5; i++) {
+                SUBWAY_LINES.push({
+                    start: { x: Math.random() * width, y: Math.random() * height },
+                    end: { x: Math.random() * width, y: Math.random() * height }
+                });
+            }
+        }
+        
+        // [추가됨] O/D 매트릭스 생성 함수
+        function setupODMatrix() {
+            const allStopNames = Object.keys(STOPS_DATA);
+            for (let i = 0; i < allStopNames.length; i++) {
+                const stopA_name = allStopNames[i];
+                OD_MATRIX[stopA_name] = {};
+                for (let j = 0; j < allStopNames.length; j++) {
+                    if (i === j) continue;
+                    const stopB_name = allStopNames[j];
+                    const stopA = STOPS_DATA[stopA_name];
+                    const stopB = STOPS_DATA[stopB_name];
+                    
+                    const distance = getDistance(stopA, stopB);
+                    // 중력 모델: (A승객 * B승객) / 거리^2
+                    // 거리가 0에 가까울 때 값이 무한으로 가는 것을 방지하기 위해 +1
+                    // scalingFactor로 값의 크기 조절
+                    const scalingFactor = 0.001; 
+                    const demand = (stopA.passengers * stopB.passengers) / (distance**2 + 1) * scalingFactor;
+                    OD_MATRIX[stopA_name][stopB_name] = demand;
+                }
+            }
+        }
+
+        // --- 4. FITNESS & HELPER FUNCTIONS ---
+        function getDistance(stop1, stop2) {
+            const pixelToKm = 0.025;
+            return Math.sqrt((stop1.x - stop2.x) ** 2 + (stop1.y - stop2.y) ** 2) * pixelToKm;
+        }
+
+        function calculateRouteMetrics(route) {
+            let D = 0, P = 0, O = 0, S = 0;
+            
+            for (let i = 0; i < route.length - 1; i++) {
+                D += getDistance(STOPS_DATA[route[i]], STOPS_DATA[route[i+1]]);
+            }
+
+            for (const stopName of route) {
+                P += STOPS_DATA[stopName].passengers;
+            }
+            
+            // [수정됨] O/D 점수 계산 로직 변경
+            // 노선 내 모든 정류장 쌍의 수요를 매트릭스에서 조회하여 합산
+            for (let i = 0; i < route.length; i++) {
+                for (let j = i + 1; j < route.length; j++) {
+                    const from = route[i];
+                    const to = route[j];
+                    if(OD_MATRIX[from] && OD_MATRIX[from][to]) {
+                       O += OD_MATRIX[from][to];
+                    }
+                }
+            }
+
+            for (let i = 0; i < route.length - 1; i++) {
+                 const p1 = STOPS_DATA[route[i]];
+                 const p2 = STOPS_DATA[route[i+1]];
+                 for(const line of SUBWAY_LINES) {
+                     const dist = Math.abs((line.end.y - line.start.y) * p1.x - (line.end.x - line.start.x) * p1.y + line.end.x * line.start.y - line.end.y * line.start.x) / Math.sqrt((line.end.y - line.start.y)**2 + (line.end.x - line.start.x)**2);
+                     if (dist < 20) {
+                        S += getDistance(p1, p2);
+                        break;
+                     }
+                 }
+            }
+
+            const T = (D / AVG_SPEED_KMH) + (route.length * AVG_STOP_TIME_S) / 3600;
+            
+            return { P, T, D, S, O };
+        }
+
+        function calculateFitness(metrics, maxMetrics) {
+            if (metrics.D === 0 || maxMetrics.D === 0) return 0;
+            
+            const p_prime = metrics.P / maxMetrics.P;
+            const o_prime = metrics.O / maxMetrics.O;
+            const t_prime = 1 - (metrics.T / maxMetrics.T);
+            const d_prime = 1 - (metrics.D / maxMetrics.D);
+            const s_prime = 1 - (metrics.S / metrics.D);
+
+            const fitness = (WEIGHTS.P * p_prime) + (WEIGHTS.T * t_prime) +
+                            (WEIGHTS.D * d_prime) + (WEIGHTS.S * s_prime) +
+                            (WEIGHTS.O * o_prime);
+            
+            return Math.max(0, fitness);
+        }
+
+        // --- 5. GENETIC OPERATORS ---
+        function createInitialPopulation() {
+            let population = [];
+            while (population.length < POPULATION_SIZE) {
+                const startHub = SEODAEMUN_HUBS[Math.floor(Math.random() * SEODAEMUN_HUBS.length)];
+                const endHub = JONGNO_HUBS[Math.floor(Math.random() * JONGNO_HUBS.length)];
+                
+                const numStops = Math.floor(Math.random() * (MAX_STOPS - MIN_STOPS + 1)) + MIN_STOPS;
+                const intermediateStops = GENERAL_STOP_NAMES
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, numStops - 2);
+
+                const newRoute = [startHub, ...intermediateStops, endHub];
+                population.push([...new Set(newRoute)]);
+            }
+            return population;
+        }
+
+        function selection(popWithFitness) {
+            const totalFitness = popWithFitness.reduce((sum, ind) => sum + ind.fitness, 0);
+            if (totalFitness === 0) return popWithFitness[Math.floor(Math.random() * popWithFitness.length)].route;
+
+            let pick = Math.random() * totalFitness;
+            for (const individual of popWithFitness) {
+                pick -= individual.fitness;
+                if (pick <= 0) return individual.route;
+            }
+            return popWithFitness[popWithFitness.length - 1].route;
+        }
+
+        function crossover(parent1, parent2) {
+             const p1_inter = parent1.slice(1, -1);
+             const p2_inter = parent2.slice(1, -1);
+             if (p1_inter.length < 1 || p2_inter.length < 1) return [parent1.slice(), parent2.slice()];
+
+             const start = Math.floor(Math.random() * p1_inter.length);
+             const end = start + Math.floor(Math.random() * (p1_inter.length - start));
+             
+             const slice = p1_inter.slice(start, end);
+             const child_inter = [...slice, ...p2_inter.filter(stop => !slice.includes(stop))];
+             
+             const child = [parent1[0], ...child_inter.slice(0, MAX_STOPS - 2), parent2[parent2.length - 1]];
+             return [[...new Set(child)], parent2.slice()];
+        }
+
+        function mutate(route) {
+            if (route.length > 3) {
+                for (let i = 1; i < route.length - 1; i++) {
+                     if (Math.random() < 0.1) {
+                        const newStop = GENERAL_STOP_NAMES[Math.floor(Math.random() * GENERAL_STOP_NAMES.length)];
+                        if (!route.includes(newStop)) route[i] = newStop;
+                     }
+                }
+            }
+            return route;
+        }
+
+        // --- 6. DRAWING FUNCTIONS ---
+        function draw(bestRoute) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(255, 165, 0, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            SUBWAY_LINES.forEach(line => {
+                ctx.beginPath();
+                ctx.moveTo(line.start.x, line.start.y);
+                ctx.lineTo(line.end.x, line.end.y);
+                ctx.stroke();
+            });
+            ctx.setLineDash([]);
+
+            for (const stopName in STOPS_DATA) {
+                const stop = STOPS_DATA[stopName];
+                if (stop.isHub) continue;
+                ctx.fillStyle = '#CBD5E1';
+                ctx.beginPath();
+                ctx.arc(stop.x, stop.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.font = '12px "Noto Sans KR"';
+            for (const hubName in STOPS_DATA) {
+                const stop = STOPS_DATA[hubName];
+                if (!stop.isHub) continue;
+                ctx.fillStyle = stop.district === '서대문구' ? '#3B82F6' : '#EF4444';
+                ctx.beginPath();
+                ctx.arc(stop.x, stop.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#111827';
+                ctx.textAlign = stop.district === '서대문구' ? 'right' : 'left';
+                const textX = stop.district === '서대문구' ? stop.x - 12 : stop.x + 12;
+                ctx.fillText(stop.name, textX, stop.y + 4);
+            }
+            
+            if (!bestRoute || bestRoute.length < 2) return;
+            ctx.strokeStyle = '#10B981';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(STOPS_DATA[bestRoute[0]].x, STOPS_DATA[bestRoute[0]].y);
+            for (let i = 1; i < bestRoute.length; i++) {
+                ctx.lineTo(STOPS_DATA[bestRoute[i]].x, STOPS_DATA[bestRoute[i]].y);
+            }
+            ctx.stroke();
+
+            bestRoute.forEach(stopName => {
+                const stop = STOPS_DATA[stopName];
+                ctx.fillStyle = '#10B981';
+                ctx.beginPath();
+                ctx.arc(stop.x, stop.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        // --- 7. MAIN SIMULATION LOOP ---
+        let population = [];
+        let currentGeneration = 0;
+
+        function simulationStep() {
+            if (currentGeneration >= NUM_GENERATIONS) {
+                startButton.disabled = false;
+                startButton.innerText = "다시 시작";
+                cancelAnimationFrame(animationFrameId);
+                return;
+            }
+
+            const metrics = population.map(calculateRouteMetrics);
+            const maxMetrics = {
+                P: Math.max(1, ...metrics.map(m => m.P)), T: Math.max(1, ...metrics.map(m => m.T)),
+                D: Math.max(1, ...metrics.map(m => m.D)), S: Math.max(1, ...metrics.map(m => m.S)),
+                O: Math.max(1, ...metrics.map(m => m.O))
+            };
+
+            const popWithFitness = population
+                .map((route, i) => ({ route, fitness: calculateFitness(metrics[i], maxMetrics) }))
+                .sort((a, b) => b.fitness - a.fitness);
+
+            const eliteCount = Math.floor(POPULATION_SIZE * ELITISM_RATE);
+            let nextGeneration = popWithFitness.slice(0, eliteCount).map(ind => ind.route);
+
+            while (nextGeneration.length < POPULATION_SIZE) {
+                const parent1 = selection(popWithFitness);
+                const parent2 = selection(popWithFitness);
+                let [child1, child2] = crossover(parent1, parent2);
+                child1 = mutate(child1);
+                nextGeneration.push(child1);
+            }
+            population = nextGeneration;
+            
+            const bestIndividual = popWithFitness[0];
+            generationInfo.textContent = `${currentGeneration + 1} / ${NUM_GENERATIONS}`;
+            fitnessInfo.textContent = bestIndividual.fitness.toFixed(4);
+            routeStopsInfo.textContent = `${bestIndividual.route.length}개`;
+            routeInfo.innerHTML = bestIndividual.route.map((stop, i) => {
+                const stopData = STOPS_DATA[stop];
+                const color = stopData.isHub ? (stopData.district === '서대문구' ? 'text-blue-600' : 'text-red-600') : 'text-gray-700';
+                return `<span class="font-semibold ${color}">${stop}</span>`;
+            }).join('<span class="mx-1 text-gray-400">→</span>');
+            
+            draw(bestIndividual.route);
+
+            currentGeneration++;
+            animationFrameId = requestAnimationFrame(simulationStep);
+        }
+
+        function startSimulation() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            
+            startButton.disabled = true;
+            startButton.innerText = "처리 중...";
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+
+            setTimeout(() => {
+                loadingText.innerText = "가상 정류장 생성 중...";
+                resizeCanvas();
+                setupVirtualData();
+                
+                loadingText.innerText = "O/D 매트릭스 계산 중...";
+                // [추가됨] O/D 매트릭스 설정 호출
+                setupODMatrix();
+
+                loadingText.innerText = "초기 노선 생성 중...";
+                population = createInitialPopulation();
+                currentGeneration = 0;
+                
+                loadingOverlay.classList.add('hidden');
+                loadingOverlay.classList.remove('flex');
+                startButton.innerText = "시뮬레이션 중...";
+                
+                simulationStep();
+            }, 100);
+        }
+
+        startButton.addEventListener('click', startSimulation);
+        
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            draw([]);
+        });
+    </script>
+</body>
+</html>

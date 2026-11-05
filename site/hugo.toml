@@ -97,3 +97,6 @@ enableEmoji = true
     weight = 10
     label = "English"
     contentDir = "content/en"
+
+[markup.goldmark.renderer]
+  unsafe = true

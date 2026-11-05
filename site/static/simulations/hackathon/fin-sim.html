@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>버스 노선 최적화 유전 알고리즘 시뮬레이션 (ERX & PMX 적용)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- LeafletJS (Map Library) CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- LeafletJS (Map Library) JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', 'Noto Sans KR', sans-serif; }
+        .loader {
+            border-top-color: #3b82f6;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @-webkit-keyframes spinner { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .hub-icon-container {
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .hub-label {
+            background-color: transparent;
+            border: none;
+            box-shadow: none;
+            color: #1F2937;
+            font-weight: 600;
+            font-size: 12px; /* Increased font size */
+            text-shadow: -1px -1px 0 #FFF, 1px -1px 0 #FFF, -1px 1px 0 #FFF, 1px 1px 0 #FFF;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="flex flex-col lg:flex-row h-screen">
+
+        <!-- Left Panel: Controls & Info -->
+        <div class="w-full lg:w-[400px] xl:w-[450px] bg-white shadow-lg p-6 flex flex-col h-full overflow-y-auto">
+            <div class="flex-grow">
+                <h1 class="text-3xl font-bold text-gray-900">버스 노선 최적화</h1>
+                <p class="text-base text-gray-500 mb-6">유전 알고리즘 기반 시뮬레이션</p>
+                
+                <!-- Crossover Method Selection -->
+                <div class="mb-6">
+                    <label for="crossoverMethod" class="text-xl font-semibold text-gray-700">교차 방식 선택</label>
+                    <select id="crossoverMethod" class="mt-2 w-full bg-gray-100 border-gray-300 rounded-md shadow-sm p-2 text-base focus:ring-blue-500 focus:border-blue-500">
+                        <option value="erx">엣지 재조합 교차 (ERX) - 추천</option>
+                        <option value="pmx">부분 매핑 교차 (PMX)</option>
+                        <option value="order">순서 교차 (Order Crossover)</option>
+                    </select>
+                </div>
+
+
+                <!-- GA Parameters -->
+                <div class="space-y-4 border-t border-b py-6 border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700">파라미터 설정</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="populationSize" class="font-medium text-gray-600 text-base">개체군 크기</label>
+                            <input type="number" id="populationSize" value="80" class="mt-1 w-full bg-gray-100 border-gray-300 rounded-md shadow-sm p-2 text-base focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="generations" class="font-medium text-gray-600 text-base">세대 수</label>
+                            <input type="number" id="generations" value="200" class="mt-1 w-full bg-gray-100 border-gray-300 rounded-md shadow-sm p-2 text-base focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="minStops" class="font-medium text-gray-600 text-base">최소 경유지</label>
+                            <input type="number" id="minStops" value="5" class="mt-1 w-full bg-gray-100 border-gray-300 rounded-md shadow-sm p-2 text-base focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="maxStops" class="font-medium text-gray-600 text-base">최대 경유지</label>
+                            <input type="number" id="maxStops" value="20" class="mt-1 w-full bg-gray-100 border-gray-300 rounded-md shadow-sm p-2 text-base focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Status -->
+                <div class="py-6 space-y-3">
+                     <h2 class="text-xl font-semibold text-gray-700">시뮬레이션 현황</h2>
+                     <div class="flex justify-between items-center text-base font-medium">
+                         <p>진행률</p>
+                         <p id="generation-info">0 / 200</p>
+                     </div>
+                     <div class="w-full bg-gray-200 rounded-full h-2.5">
+                         <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                     </div>
+                </div>
+                
+                <!-- Results -->
+                <div class="space-y-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h3 class="font-bold text-blue-800 text-lg">최적 노선 (Best Route)</h3>
+                        <p id="fitness-info" class="text-base font-mono text-blue-700 mt-1">적합도: -</p>
+                        <p id="route-stops-info" class="text-base font-mono text-blue-700">경유지: -</p>
+                        <div id="route-info" class="text-sm break-words h-24 overflow-y-auto bg-white p-2 rounded-md border mt-2">-</div>
+                    </div>
+                    <div class="bg-gray-100 border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-bold text-gray-600 text-lg">초기 노선 (Initial Route)</h3>
+                        <p id="initial-fitness-info" class="text-base font-mono text-gray-500 mt-1">적합도: -</p>
+                        <p id="initial-route-stops-info" class="text-base font-mono text-gray-500">경유지: -</p>
+                        <div id="initial-route-info" class="text-sm break-words h-24 overflow-y-auto bg-white p-2 rounded-md border mt-2">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="mt-6">
+                <button id="start-button" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 text-lg">
+                    시뮬레이션 시작
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel: Map -->
+        <div class="flex-grow relative">
+            <div id="map" class="w-full h-full"></div>
+            <div id="loading-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex-col items-center justify-center rounded-xl hidden z-[1000]">
+                <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4"></div>
+                <p id="loading-text" class="text-gray-800 font-semibold text-xl">초기 노선 생성 중...</p>
+            </div>
+            <div id="map-legend" class="absolute bottom-4 right-4 bg-white bg-opacity-90 p-3 rounded-lg shadow-md z-[1000]">
+                <h4 class="font-bold text-base mb-2">범례</h4>
+                <div class="flex items-center mb-1"><div class="w-4 h-4 rounded-full mr-2" style="background-color: #EF4444;"></div><span class="text-sm">종로구 허브</span></div>
+                <div class="flex items-center mb-1"><div class="w-4 h-4 rounded-full mr-2" style="background-color: #3B82F6;"></div><span class="text-sm">서대문구 허브</span></div>
+                <div class="flex items-center mt-2"><div class="w-4 h-1 mr-2" style="background-color: #10B981; border-radius: 2px;"></div><span class="text-sm">최적 노선</span></div>
+                <div class="flex items-center"><div class="w-4 h-1 mr-2" style="border-top: 3px dashed #F59E0B;"></div><span class="text-sm">초기 노선</span></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. SETUP & ELEMENT BINDING ---
+        const startButton = document.getElementById('start-button');
+        const generationInfo = document.getElementById('generation-info');
+        const progressBar = document.getElementById('progress-bar');
+        const fitnessInfo = document.getElementById('fitness-info');
+        const routeInfo = document.getElementById('route-info');
+        const routeStopsInfo = document.getElementById('route-stops-info');
+        const initialFitnessInfo = document.getElementById('initial-fitness-info');
+        const initialRouteInfo = document.getElementById('initial-route-info');
+        const initialRouteStopsInfo = document.getElementById('initial-route-stops-info');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
+        const crossoverMethodSelect = document.getElementById('crossoverMethod');
+
+        // Input fields
+        const populationSizeInput = document.getElementById('populationSize');
+        const generationsInput = document.getElementById('generations');
+        const minStopsInput = document.getElementById('minStops');
+        const maxStopsInput = document.getElementById('maxStops');
+
+        let animationFrameId;
+        let initialPopWithFitness = [];
+        let map;
+        let routeLayers = L.layerGroup();
+        let hubMarkers = L.layerGroup();
+
+        // --- DATA (TSV strings embedded) ---
+        const passengerDataTsv = `
+stop	passenger
+1001	4506
+1002	4742
+1003	3538
+1004	3594
+1005	3946
+1006	11084
+1007	8699
+1008	7033
+1009	5478
+1010	4353
+1011	3442
+1012	6008
+1013	4333
+1014	5482
+1015	4659
+1016	8941
+1017	5858
+1018	5598
+1019	6170
+1020	4367
+1021	4676
+1022	3341
+1023	2667
+1037	1530
+1038	1031
+1039	1530
+1040	1031
+1041	1735
+1042	1735
+1043	1831
+1044	1831
+1101	3517
+1102	2899
+1103	10795
+1104	10795
+1105	13476
+1106	13476
+1107	6600
+1108	6600
+1109	2549
+1110	2211
+1111	2211
+1112	2549
+1113	2211
+1114	2549
+1115	2211
+1116	5840
+1117	5840
+1118	5367
+1119	4279
+1120	4279
+1121	5367
+1122	5367
+1123	4279
+1124	1537
+1125	1537
+1126	5295
+1127	5295
+1128	823
+1129	823
+1130	1159
+1131	1159
+1132	2979
+1133	2979
+1134	2407
+1135	2407
+1136	6090
+1137	6090
+1138	6090
+1139	6090
+1140	2407
+1141	2407
+1142	2979
+1143	2979
+1144	1159
+1145	1159
+1146	823
+1147	823
+1148	5295
+1149	5295
+1150	1537
+1151	1537
+1152	4279
+1153	5367
+1154	4279
+1155	5367
+1156	5840
+1157	5840
+1158	2211
+1159	2549
+1160	2549
+1161	2211
+1162	2549
+1163	6600
+1164	6600
+1165	13476
+1166	13476
+1167	10795
+1168	10795
+1169	2899
+1170	2899
+1171	3517
+1172	3517
+1173	3517
+1174	2899
+1175	2899
+1176	10795
+1177	10795
+13001	4506
+13002	4742
+13003	3538
+13004	3594
+13005	3946
+13006	11084
+13007	8699
+13008	7033
+13009	5478
+13010	4353
+13011	3442
+13012	6008
+13013	4333
+13014	5482
+13015	4659
+13016	8941
+13017	5858
+13018	5598
+13019	6170
+13020	4367
+13021	4676
+13022	3341
+13023	2667
+13024	1530
+13025	1031
+13026	1530
+13027	1031
+13028	1735
+13029	1735
+13030	1831
+13031	1831
+13032	3517
+13033	2899
+13034	10795
+13035	10795
+13036	13476
+13037	13476
+13038	6600
+13039	6600
+13040	2549
+13041	2211
+13042	2211
+13043	2549
+13044	2211
+13045	2549
+13046	5840
+13047	5840
+13048	5367
+13049	4279
+13050	4279
+13051	5367
+13052	5367
+13053	4279
+13054	1537
+13055	1537
+13056	5295
+13057	5295
+13058	823
+13059	823
+13060	1159
+13061	1159
+13062	2979
+13063	2979
+13064	2407
+13065	2407
+13066	6090
+13067	6090
+13068	6090
+13069	6090
+13070	2407
+13071	2407
+13072	2979
+13073	2979
+13074	1159
+13075	1159
+13076	823
+13077	823
+13078	5295
+13079	5295
+13080	1537
+13081	1537
+13082	4279
+13083	5367
+13084	4279
+13085	5367
+13086	5840
+13087	5840
+13088	2211
+13089	2549
+13090	2549
+13091	2211
+13092	2549
+13093	6600
+13094	6600
+13095	13476
+13096	13476
+13097	10795
+13098	10795
+13099	2899
+13100	2899
+13101	3517
+13102	3517
+13103	3517
+13104	2899
+13105	2899
+13106	10795
+13107	10795
+13108	13476
+13109	13476
+13110	6600
+13111	6600
+13112	2549
+13113	2211
+13114	2211
+13115	2549
+13116	2211
+13117	2549
+13118	5840
+13119	5840
+13120	5367
+13121	4279
+13122	4279
+13123	5367
+13124	5367
+13125	4279
+13126	1537
+13127	1537
+13128	5295
+13129	5295
+13130	823
+13131	823
+13132	1159
+13133	1159
+13134	2979
+13135	2979
+13136	2407
+13137	2407
+13138	6090
+13139	6090
+13140	6090
+13141	6090
+13142	2407
+13143	2407
+13144	2979
+13145	2979
+13146	1159
+13147	1159
+13148	823
+13149	823
+13150	5295
+13151	5295
+13152	1537
+13153	1537
+13154	4279
+13155	5367
+13156	4279
+13157	5367
+13158	5840
+13159	5840
+13160	2211
+13161	2549
+13162	2549
+13163	2211
+13164	2549
+13165	6600
+13166	6600
+13167	13476
+13168	13476
+13169	10795
+13170	10795
+13171	2899
+13172	2899
+13173	3517
+13174	3517
+`;
+        const locationDataTsv = `
+arsId	정류소명	X좌표	Y좌표
+1001	종로2가사거리	126.987752	37.569808
+1002	창경궁.서울대학교병원	126.99652	37.579183
+1003	명륜3가.성대입구	126.99834	37.582671
+1004	종로2가.삼일교	126.987613	37.568579
+1005	혜화동로터리.여운형활동터	127.001744	37.586243
+1006	서대문역사거리	126.966426	37.567366
+1007	서울역사박물관.경희궁앞	126.970068	37.570043
+1008	광화문	126.976832	37.570889
+1009	광화문역	126.977413	37.573213
+1010	광화문광화문빌딩	126.977413	37.573213
+1011	안국역.종로경찰서.인사동	126.985233	37.576213
+1012	창덕궁.서울돈화문국악당	126.990262	37.578857
+1013	원남동	126.998054	37.575685
+1014	종로5가.광장시장	127.001715	37.571453
+1015	종로6가.동대문종합시장	127.007559	37.571212
+1016	동대문.흥인지문	127.011033	37.571733
+1017	동묘앞	127.016333	37.572993
+1018	숭인동	127.018713	37.573516
+1019	신설동역.서울풍물시장	127.025066	37.575317
+1020	용두동.서울시립동부병원	127.038758	37.576785
+1021	제기동역.서울약령시	127.041575	37.579482
+1022	청량리.현대코아	127.049386	37.581515
+1023	서울성심병원	127.052636	37.581387
+1037	경복궁역	126.973426	37.575978
+1041	동묘앞.서울혜화경찰서	127.016333	37.572993
+1044	독립문공원.극동아파트	126.959392	37.575883
+1101	사직단	126.971513	37.577239
+1102	사직공원	126.968695	37.576332
+1103	서울지방경찰청.경복궁역	126.973277	37.57863
+1104	경복궁	126.976939	37.57862
+1105	세종문화회관	126.977395	37.572186
+1106	종로1가	126.982545	37.570123
+1107	종로2가	126.986877	37.569921
+1108	종로3가.탑골공원	126.990251	37.570222
+1109	종로4가.종묘	126.996556	37.571026
+1110	종로5가.효제초등학교	127.001725	37.571439
+1111	통인시장.종로구보건소	126.972353	37.580424
+1112	효자동	126.973909	37.582194
+1113	경복궁역.동측	126.976722	37.579933
+1114	열린송현녹지광장	126.983088	37.578051
+1115	경복궁역2번출구	126.972583	37.580453
+1116	조계사	126.982979	37.575225
+1117	무교동	126.980644	37.56847
+1118	롯데영프라자	126.98418	37.565103
+1119	남대문시장.회현역	126.980064	37.559099
+1120	서울역버스환승센터	126.971933	37.55622
+1123	서대문경찰서	126.967812	37.565416
+1124	영천시장	126.961956	37.570773
+1125	독립문역.한성과학고	126.956763	37.574488
+1126	자하문터널입구.석파정	126.969018	37.590863
+1127	부암동주민센터.무계원	126.966373	37.595166
+1128	평창동.삼성아파트	126.971295	37.609591
+1129	평창문화로.평창중학교	126.975498	37.61115
+1130	갑을씨티텔.시청앞	126.976458	37.564998
+1131	시청앞.덕수궁	126.975442	37.566378
+1132	서울신문사	126.978939	37.568205
+1133	KT광화문지사.지하철5호선광화문역	126.978579	37.571043
+1134	을지로입구.광교	126.983944	37.567086
+1135	을지로2가.기업은행본점.서울노동청	126.986877	37.566315
+1136	을지로3가	126.992226	37.566195
+1137	을지로4가.베스트웨스턴국도	126.997232	37.566777
+1138	을지로5가.중부시장	127.002237	37.567073
+1139	국립중앙의료원.롯데피트인	127.007621	37.567364
+1140	동대문역사문화공원	127.010137	37.566155
+1141	광희동	127.010156	37.565257
+1142	을지로6가.국립중앙의료원	127.007632	37.566085
+1143	을지로5가	127.00192	37.566219
+1144	을지로4가	126.996765	37.56612
+1146	을지로입구역.롯데백화점	126.983279	37.565213
+1148	북창동.남대문시장	126.979038	37.562187
+1149	숭례문	126.975344	37.559983
+1150	서울역	126.973461	37.55462
+1151	광화문.금호아시아나본관앞	126.973216	37.570978
+1152	적선동.경복궁역	126.973397	37.57531
+1153	청운중학교	126.96956	37.585573
+1154	상명대입구.세검정교회	126.960249	37.599696
+1155	세검정초등학교	126.957581	37.601449
+1156	구기동	126.954605	37.61058
+1157	이북5도청.평창동주민센터	126.956731	37.611956
+1158	평창동.일성아파트	126.965744	37.611598
+1159	롯데캐슬.유원아파트	126.968032	37.60907
+1160	국민은행.세검정지점	126.96205	37.597658
+1161	하림각	126.967675	37.595603
+1162	자하문터널입구.상명대	126.968603	37.591054
+1163	경복고교	126.971556	37.58807
+1164	통인시장.종로구보건소	126.972583	37.580453
+1165	사직공원	126.969145	37.576081
+1167	서울역사박물관.경교장앞	126.968994	37.568938
+1168	경찰청.동북아역사재단	126.967818	37.56272
+1169	한국경제신문사	126.969837	37.558362
+1171	서울역.YTN	126.974092	37.561081
+1172	우리은행종로지점	126.980645	37.569479
+1173	종로2가	126.98688	37.569926
+1174	종로3가.탑골공원	126.990263	37.570222
+1175	종로4가.종묘	126.996568	37.571026
+1176	종로5가	127.001716	37.57144
+1177	이화동.이화장	127.004128	37.577242
+1198	창신쌍용아파트	127.013545	37.579435
+1199	숭인1동주민센터.창신역4번출구	127.01389	37.577782
+1200	동묘앞역.벼룩시장	127.017558	37.573934
+1201	동대문	127.010626	37.572458
+1202	종로6가	127.008891	37.571161
+1203	종로5가.광장시장	127.001695	37.571453
+1204	종로4가.우리약국	126.997233	37.570776
+1205	종로3가	126.991244	37.57007
+1239	숭인1동주민센터.창신역4번출구	127.01389	37.577782
+1550	종로3가역9번출구	126.991244	37.57007
+1592	혜화역1번출구	127.001744	37.586243
+1682	동대문역2번출구	127.011033	37.571733
+1779	안국역	126.985233	37.576213
+1794	종로5가역.광장시장	127.001715	37.571453
+1912	종각역	126.982545	37.570123
+13031	무악재역	126.95074	37.581896
+13047	서대문역사거리	126.966426	37.567366
+13250	독립문역·서대문형무소역사관	126.956763	37.574488
+13334	홍제역4번출구	126.94273	37.588696
+13766	충정로역	126.963311	37.560195
+`;
+        const odDataTsv = `
+start	end	num
+1001	1105	100
+1001	1106	250
+1002	1116	150
+1006	13038	300
+1007	1123	120
+1008	1133	400
+1011	1114	220
+1014	1109	180
+1016	1201	280
+1017	1199	90
+1021	1564	50
+1037	1103	350
+1107	1554	130
+1124	13241	70
+1125	13141	160
+1126	1296	85
+1136	1240	190
+1149	1502	210
+1155	1288	45
+1169	1503	110
+1205	1108	230
+1219	1535	65
+1227	1544	170
+1237	1514	140
+1289	1596	55
+13015	1119	95
+13031	1831	180
+13034	1104	200
+13046	1574	125
+13107	1178	165
+13155	1193	75
+13194	1120	240
+13257	1044	115
+13281	1278	155
+13333	1003	135
+13766	1168	205
+1521	1246	105
+1533	1217	260
+1561	1200	145
+1779	1239	225
+`;
+
+        // --- 2. GENETIC ALGORITHM PARAMETERS & HUB DEFINITIONS ---
+        
+        // Definitive Hub Information
+        const HUB_DEFINITIONS = {
+            '1912': { name: '종각역', district: '종로구' },
+            '1550': { name: '종로3가역9번출구', district: '종로구' },
+            '1794': { name: '종로5가역.광장시장', district: '종로구' },
+            '1682': { name: '동대문역2번출구', district: '종로구' },
+            '1041': { name: '동묘앞.서울혜화경찰서', district: '종로구' },
+            '1115': { name: '경복궁역2번출구', district: '종로구' },
+            '1779': { name: '안국역', district: '종로구' },
+            '1592': { name: '혜화역1번출구', district: '종로구' },
+            '1009': { name: '광화문역', district: '종로구' },
+            '1239': { name: '숭인1동주민센터.창신역4번출구', district: '종로구' },
+            '13766': { name: '충정로역', district: '서대문구' },
+            '13334': { name: '홍제역4번출구', district: '서대문구' },
+            '13031': { name: '무악재역', district: '서대문구' },
+            '13250': { name: '독립문역·서대문형무소역사관', district: '서대문구' },
+            '13047': { name: '서대문역사거리', district: '서대문구' }
+        };
+
+        const JONGNO_HUB_IDS = ['1912', '1550', '1794', '1682', '1041', '1115', '1779', '1592', '1009', '1239'];
+        const SEODAEMUN_HUB_IDS = ['13766', '13334', '13031', '13250', '13047'];
+        const ALL_HUB_IDS = [...JONGNO_HUB_IDS, ...SEODAEMUN_HUB_IDS];
+
+        let JONGNO_HUBS = []; 
+        let SEODAEMUN_HUBS = [];
+        
+        // Dynamic Parameters from UI
+        let POPULATION_SIZE;
+        let NUM_GENERATIONS;
+        let MIN_STOPS;
+        let MAX_STOPS;
+
+        const AVG_SPEED_KMH = 18.0; const AVG_STOP_TIME_S = 9.54;
+        const ELITISM_RATE = 0.1;
+        const WEIGHTS = { P: 0.25, T: 0.25, D: 0.25, S: 0.10, O: 0.15 };
+        
+        // --- 3. DATA SETUP & MAP INITIALIZATION ---
+        const STOPS_DATA = {};
+        let GENERAL_STOP_NAMES = [];
+        const OD_MATRIX = {};
+        
+        function parseTsvOrCsv(dataString) {
+            const trimmedData = dataString.trim();
+            const rows = trimmedData.split('\n');
+            const header = rows.shift().trim();
+            const delimiter = header.includes('\t') ? '\t' : ',';
+            return rows.map(row => row.trim().split(new RegExp(`\\s*${delimiter}\\s*`)).map(field => field.trim()));
+        }
+
+        function initializeMap() { map=L.map('map').setView([37.575,126.978],13);var esri=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, OpenStreetMap contributors',maxZoom:19});
+var osmFr=L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles by OSM France',subdomains:'abc',maxZoom:19});
+var topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA)',subdomains:'abc',maxZoom:17});
+var sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',maxZoom:19});
+esri.addTo(map);
+L.control.layers({'Esri 일반지도':esri,'OSM France':osmFr,'지형도':topo,'위성':sat},null,{position:'bottomright'}).addTo(map);
+hubMarkers.addTo(map);routeLayers.addTo(map) }
+        
+        function loadRealData() {
+            // Reset data structures
+            Object.keys(STOPS_DATA).forEach(key => delete STOPS_DATA[key]);
+            GENERAL_STOP_NAMES = [];
+            JONGNO_HUBS = JONGNO_HUB_IDS; // Use the definitive list
+            SEODAEMUN_HUBS = SEODAEMUN_HUB_IDS; // Use the definitive list
+            Object.keys(OD_MATRIX).forEach(key => delete OD_MATRIX[key]);
+
+            const allLocations = parseTsvOrCsv(locationDataTsv);
+            const nonHubCandidates = [];
+            
+            // Process all locations from the source file
+            allLocations.forEach(row => {
+                if (row.length < 4) return;
+                const id = row[0];
+                const rawName = row[1];
+                const lng = parseFloat(row[2]);
+                const lat = parseFloat(row[3]);
+
+                if (!id || isNaN(lat) || isNaN(lng)) return;
+
+                // If it's a mandatory hub, add it to STOPS_DATA
+                if (ALL_HUB_IDS.includes(id)) {
+                    const hubInfo = HUB_DEFINITIONS[id];
+                    STOPS_DATA[id] = { 
+                        id, 
+                        name: hubInfo.name, // Use the specified name
+                        lat, 
+                        lng, 
+                        passengers: 0, 
+                        isHub: true, 
+                        district: hubInfo.district 
+                    };
+                } else {
+                    // Otherwise, add it to the list of potential general stops
+                    nonHubCandidates.push({ id, name: rawName, lat, lng });
+                }
+            });
+
+            // Sample 50% of non-hub stops
+            const shuffledNonHubs = nonHubCandidates.sort(() => 0.5 - Math.random());
+            const halfLength = Math.floor(shuffledNonHubs.length * 0.5);
+            const sampledNonHubs = shuffledNonHubs.slice(0, halfLength);
+
+            // Add the sampled general stops to STOPS_DATA
+            sampledNonHubs.forEach(stop => {
+                STOPS_DATA[stop.id] = { 
+                    id: stop.id, 
+                    name: stop.name, // Original name from file
+                    lat: stop.lat, 
+                    lng: stop.lng, 
+                    passengers: 0, 
+                    isHub: false, 
+                    district: '일반' 
+                };
+                GENERAL_STOP_NAMES.push(stop.id);
+            });
+
+            // Load passenger data for all selected stops
+            parseTsvOrCsv(passengerDataTsv).forEach(([id, passengerCount]) => {
+                if (STOPS_DATA[id]) { 
+                    STOPS_DATA[id].passengers = parseInt(passengerCount) || 0;
+                }
+            });
+            
+            // Load OD data for all selected stops
+            parseTsvOrCsv(odDataTsv).forEach(([start, end, num]) => {
+                if (STOPS_DATA[start] && STOPS_DATA[end]) { 
+                    if (!OD_MATRIX[start]) OD_MATRIX[start] = {};
+                    OD_MATRIX[start][end] = parseInt(num) || 0;
+                }
+            });
+
+            if (JONGNO_HUBS.length === 0 || SEODAEMUN_HUBS.length === 0) {
+                 console.error("오류: 허브 정류장을 찾을 수 없습니다. 데이터 파일을 확인해주세요.");
+            }
+        }
+
+
+        function addHubMarkersToMap() {
+            hubMarkers.clearLayers();
+            for (const id in STOPS_DATA) {
+                const stop = STOPS_DATA[id];
+                
+                if (stop.isHub) {
+                    const color = stop.district === '서대문구' ? '#3B82F6' : '#EF4444';
+                    const hubIcon = L.divIcon({
+                        html: `<div style="background-color: ${color};" class="hub-icon-container w-4 h-4"></div>`,
+                        className: '',
+                        iconSize: [16, 16],
+                        iconAnchor: [8, 8]
+                    });
+                    L.marker([stop.lat, stop.lng], { icon: hubIcon })
+                        .bindPopup(`<b>${stop.name}</b> (${stop.district})`)
+                        .bindTooltip(stop.name, { permanent: true, direction: 'bottom', offset: [0, 8], className: 'hub-label' })
+                        .addTo(hubMarkers);
+                }
+                // Non-hub stops are not marked on the map, only shown in routes.
+            }
+        }
+
+        function completeODMatrix(){ const allStopIds=Object.keys(STOPS_DATA);for(const idA of allStopIds){if(!OD_MATRIX[idA])OD_MATRIX[idA]={};for(const idB of allStopIds){if(idA===idB)continue;if(OD_MATRIX[idA][idB]===undefined){const stopA=STOPS_DATA[idA],stopB=STOPS_DATA[idB];const distance=getDistance(stopA,stopB);const scalingFactor=0.001;const demand=(stopA.passengers*stopB.passengers)/(distance**2+1)*scalingFactor;OD_MATRIX[idA][idB]=demand}}}}
+        
+        function getDistance(stop1,stop2){if(!stop1||!stop2)return 0; const R=6371;const lat1=stop1.lat,lon1=stop1.lng;const lat2=stop2.lat,lon2=stop2.lng;const dLat=(lat2-lat1)*Math.PI/180;const dLon=(lon2-lon1)*Math.PI/180;const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));return R*c}
+        function calculateRouteMetrics(route){let D=0,P=0,O=0,S=0;for(let i=0;i<route.length-1;i++){if(!STOPS_DATA[route[i]] || !STOPS_DATA[route[i+1]]) continue; D+=getDistance(STOPS_DATA[route[i]],STOPS_DATA[route[i+1]])};for(const stopId of route){if(STOPS_DATA[stopId]) P+=STOPS_DATA[stopId].passengers};for(let i=0;i<route.length;i++){for(let j=i+1;j<route.length;j++){const from=route[i],to=route[j];if(OD_MATRIX[from]&&OD_MATRIX[from][to])O+=OD_MATRIX[from][to]}}S=route.filter(id=>STOPS_DATA[id]&&STOPS_DATA[id].isHub).length;const T=(D/AVG_SPEED_KMH)+(route.length*AVG_STOP_TIME_S)/3600;return{P,T,D,S,O}}
+        function calculateFitness(metrics,maxMetrics){if(metrics.D===0||maxMetrics.D===0)return 0;const p_prime=maxMetrics.P>0?metrics.P/maxMetrics.P:0;const o_prime=maxMetrics.O>0?metrics.O/maxMetrics.O:0;const t_prime=maxMetrics.T>0?1-(metrics.T/maxMetrics.T):0;const d_prime=maxMetrics.D>0?1-(metrics.D/maxMetrics.D):0;const s_prime=1-(metrics.S/MAX_STOPS);const fitness=(WEIGHTS.P*p_prime)+(WEIGHTS.T*t_prime)+(WEIGHTS.D*d_prime)+(WEIGHTS.S*s_prime)+(WEIGHTS.O*o_prime);return Math.max(0,fitness)}
+        
+        function createInitialPopulation(){let population=[];if(JONGNO_HUBS.length===0||SEODAEMUN_HUBS.length===0){console.error("허브 데이터가 없어 초기 집단을 생성할 수 없습니다.");return[]}while(population.length<POPULATION_SIZE){const startHub=SEODAEMUN_HUBS[Math.floor(Math.random()*SEODAEMUN_HUBS.length)];const endHub=JONGNO_HUBS[Math.floor(Math.random()*JONGNO_HUBS.length)];const numStops=Math.floor(Math.random()*(MAX_STOPS-MIN_STOPS+1))+MIN_STOPS;const intermediateStops=GENERAL_STOP_NAMES.sort(()=>0.5-Math.random()).slice(0,numStops-2);population.push([...new Set([startHub,...intermediateStops,endHub])])}return population}
+        function selection(popWithFitness){if(popWithFitness.length===0)return null;const totalFitness=popWithFitness.reduce((sum,ind)=>sum+ind.fitness,0);if(totalFitness===0)return popWithFitness[Math.floor(Math.random()*popWithFitness.length)].route;let pick=Math.random()*totalFitness;for(const individual of popWithFitness){pick-=individual.fitness;if(pick<=0)return individual.route}return popWithFitness[popWithFitness.length-1].route}
+        
+        // --- Crossover Implementations ---
+        function orderCrossover(parent1, parent2) {
+            const p1_inter = parent1.slice(1, -1);
+            const p2_inter = parent2.slice(1, -1);
+            if (p1_inter.length < 1) return [parent1.slice()];
+            const start = Math.floor(Math.random() * p1_inter.length);
+            const end = start + Math.floor(Math.random() * (p1_inter.length - start));
+            const slice = p1_inter.slice(start, end);
+            const child_inter = [...slice, ...p2_inter.filter(s => !slice.includes(s))];
+            const child = [parent1[0], ...child_inter.slice(0, MAX_STOPS - 2), parent1[parent1.length - 1]];
+            return [ [...new Set(child)] ];
+        }
+
+        function erxCrossover(parent1, parent2) {
+            const allStops = [...new Set([...parent1, ...parent2])];
+            const adjMap = new Map();
+            allStops.forEach(stop => adjMap.set(stop, new Set()));
+            const buildAdjacencies = (parent) => {
+                for (let i = 0; i < parent.length; i++) {
+                    if (parent[i-1]) adjMap.get(parent[i]).add(parent[i-1]);
+                    if (parent[i+1]) adjMap.get(parent[i]).add(parent[i+1]);
+                }
+            };
+            buildAdjacencies(parent1);
+            buildAdjacencies(parent2);
+
+            let currentStop = parent1[0];
+            const child = [currentStop];
+            const unvisitedStops = new Set(allStops);
+            unvisitedStops.delete(currentStop);
+
+            while (unvisitedStops.size > 0) {
+                adjMap.forEach(neighbors => neighbors.delete(currentStop));
+                let neighbors = adjMap.get(currentStop);
+                let nextStop = null;
+                if (neighbors && neighbors.size > 0) {
+                    let minCount = Infinity;
+                    for (const neighbor of neighbors) {
+                        const count = adjMap.get(neighbor).size;
+                        if (count < minCount) {
+                            minCount = count;
+                            nextStop = neighbor;
+                        } else if (count === minCount && Math.random() < 0.5) {
+                            nextStop = neighbor;
+                        }
+                    }
+                }
+                if (!nextStop) {
+                    const randomIdx = Math.floor(Math.random() * unvisitedStops.size);
+                    nextStop = Array.from(unvisitedStops)[randomIdx];
+                }
+                currentStop = nextStop;
+                child.push(currentStop);
+                unvisitedStops.delete(currentStop);
+            }
+            const finalChild = [parent1[0], ...child.filter(s => s !== parent1[0] && s !== parent1[parent1.length -1]), parent1[parent1.length-1]];
+            return [ finalChild.slice(0, MAX_STOPS) ];
+        }
+        
+        function pmxCrossover(parent1, parent2) {
+            const p1 = parent1.slice(1, -1);
+            const p2 = parent2.slice(1, -1);
+            if (p1.length < 2) return [parent1.slice()];
+
+            const child = new Array(p1.length).fill(null);
+            const mapping = new Map();
+            
+            const start = Math.floor(Math.random() * p1.length);
+            const end = start + Math.floor(Math.random() * (p1.length - start)) + 1;
+
+            // Swap segment and create mapping
+            for (let i = start; i < end; i++) {
+                child[i] = p2[i];
+                mapping.set(p2[i], p1[i]);
+            }
+
+            // Fill in the rest
+            for (let i = 0; i < p1.length; i++) {
+                if (i >= start && i < end) continue;
+                let gene = p1[i];
+                while (child.includes(gene)) {
+                    gene = mapping.get(gene);
+                }
+                child[i] = gene;
+            }
+            
+            const finalChild = [parent1[0], ...child, parent1[parent1.length - 1]];
+            return [[...new Set(finalChild)].slice(0, MAX_STOPS)];
+        }
+
+
+        function getRouteTotalDistance(route) {let distance = 0;for (let i = 0; i < route.length - 1; i++){const stop1 = STOPS_DATA[route[i]];const stop2 = STOPS_DATA[route[i+1]];if (stop1 && stop2) {distance += getDistance(stop1, stop2)}}return distance;}
+        function optimizeWith2Opt(route) {if(route.length<4)return route;let bestRoute=[...route];let improved=true;while(improved){improved=false;for(let i=1;i<bestRoute.length-2;i++){for(let j=i+1;j<bestRoute.length-1;j++){const newRoute=[...bestRoute.slice(0,i),...bestRoute.slice(i,j+1).reverse(),...bestRoute.slice(j+1)];if(getRouteTotalDistance(newRoute)<getRouteTotalDistance(bestRoute)){bestRoute=newRoute;improved=true}}}}return bestRoute}
+        function mutate(route) {let mutatedRoute=[...route];if(Math.random()<0.1){if(mutatedRoute.length>2){const i=1+Math.floor(Math.random()*(mutatedRoute.length-2));const newStop=GENERAL_STOP_NAMES[Math.floor(Math.random()*GENERAL_STOP_NAMES.length)];if(!mutatedRoute.includes(newStop))mutatedRoute[i]=newStop}}if(Math.random()<0.15){if(Math.random()<0.5&&mutatedRoute.length<MAX_STOPS){const newStop=GENERAL_STOP_NAMES[Math.floor(Math.random()*GENERAL_STOP_NAMES.length)];if(!mutatedRoute.includes(newStop)){const insertIndex=1+Math.floor(Math.random()*(mutatedRoute.length-1));mutatedRoute.splice(insertIndex,0,newStop)}}else if(mutatedRoute.length>MIN_STOPS+1){const removeIndex=1+Math.floor(Math.random()*(mutatedRoute.length-2));mutatedRoute.splice(removeIndex,1)}}if(Math.random()<0.05){mutatedRoute=optimizeWith2Opt(mutatedRoute)}return mutatedRoute}
+
+        function drawRoutesOnMap(currentBestRoute, initialRouteForComparison) {
+            routeLayers.clearLayers();
+            const getLatLngs = route => route.map(id => STOPS_DATA[id] ? [STOPS_DATA[id].lat, STOPS_DATA[id].lng] : null).filter(Boolean);
+            if (initialRouteForComparison && initialRouteForComparison.length >= 2) L.polyline(getLatLngs(initialRouteForComparison), { color: '#F59E0B', weight: 8, opacity: 0.9, dashArray: '6, 12' }).addTo(routeLayers);
+            if (currentBestRoute && currentBestRoute.length >= 2) L.polyline(getLatLngs(currentBestRoute), { color: '#10B981', weight: 8, opacity: 0.9 }).addTo(routeLayers);
+        }
+        
+        let population = [], currentGeneration = 0;
+        
+        function updateUIs(bestIndividual, initialForComparison) {
+            if (!bestIndividual) return;
+            const createRouteHTML = (route) => route.map(id => {
+                const stopData = STOPS_DATA[id];
+                if (!stopData) return '';
+                const displayName = stopData.isHub ? stopData.name : stopData.id;
+                const color = stopData.isHub ? (stopData.district === '서대문구' ? 'text-blue-600' : 'text-red-600') : 'text-gray-700';
+                return `<span class="font-semibold ${color}">${displayName}</span>`;
+            }).join('<span class="mx-1 text-gray-400">→</span>');
+            fitnessInfo.textContent = `적합도: ${bestIndividual.fitness.toFixed(4)}`;
+            routeStopsInfo.textContent = `경유지: ${bestIndividual.route.length}개`;
+            routeInfo.innerHTML = createRouteHTML(bestIndividual.route);
+            if (initialForComparison) {
+                initialFitnessInfo.textContent = `적합도: ${initialForComparison.fitness.toFixed(4)}`;
+                initialRouteStopsInfo.textContent = `경유지: ${initialForComparison.route.length}개`;
+                initialRouteInfo.innerHTML = createRouteHTML(initialForComparison.route);
+            }
+        }
+        
+        function simulationStep() { 
+            if(currentGeneration>=NUM_GENERATIONS || population.length === 0){
+                startButton.disabled=false;
+                startButton.innerText="다시 시작";
+                cancelAnimationFrame(animationFrameId);
+                return;
+            }
+            const metrics=population.map(calculateRouteMetrics);
+            const maxMetrics={P:Math.max(1,...metrics.map(m=>m.P)),T:Math.max(1,...metrics.map(m=>m.T)),D:Math.max(1,...metrics.map(m=>m.D)),S:Math.max(1,...metrics.map(m=>m.S)),O:Math.max(1,...metrics.map(m=>m.O))};
+            const popWithFitness=population.map((r,i)=>({route:r,fitness:calculateFitness(metrics[i],maxMetrics)})).sort((a,b)=>b.fitness-a.fitness);
+            const eliteCount=Math.floor(population.length*ELITISM_RATE);
+            let nextGeneration=popWithFitness.slice(0,eliteCount).map(ind=>ind.route);
+            
+            const method = crossoverMethodSelect.value;
+            const crossoverFunction = method === 'erx' ? erxCrossover : (method === 'pmx' ? pmxCrossover : orderCrossover);
+
+            while(nextGeneration.length < population.length){
+                const p1 = selection(popWithFitness), p2 = selection(popWithFitness);
+                if (!p1 || !p2) continue;
+                let children = crossoverFunction(p1, p2);
+                children.forEach(c => {
+                    const mutatedChild = mutate(c);
+                    if (mutatedChild) nextGeneration.push(mutatedChild);
+                });
+            }
+            population = nextGeneration.filter(r => r && r.length > 0).slice(0, POPULATION_SIZE);
+
+            if(population.length === 0 || popWithFitness.length === 0){
+                console.error("오류: 다음 세대 생성에 실패하여 시뮬레이션을 중단합니다.");
+                startButton.disabled = false;
+                startButton.innerText = "오류 발생 - 다시 시작";
+                cancelAnimationFrame(animationFrameId);
+                return;
+            }
+
+            const bestIndividual=popWithFitness[0];
+            generationInfo.textContent=`${currentGeneration+1} / ${NUM_GENERATIONS}`;
+            progressBar.style.width = `${((currentGeneration + 1) / NUM_GENERATIONS) * 100}%`;
+            
+            const startHub = bestIndividual.route[0];
+            const endHub = bestIndividual.route[bestIndividual.route.length - 1];
+
+            // Find an initial route with the same start AND end hubs for a fair comparison.
+            let matchingInitialRoutes = initialPopWithFitness.filter(ind => 
+                ind.route && 
+                ind.route.length > 1 &&
+                ind.route[0] === startHub && 
+                ind.route[ind.route.length - 1] === endHub
+            );
+
+            let initialRouteForComparison;
+            if (matchingInitialRoutes.length > 0) {
+                // If found, pick the best among them.
+                initialRouteForComparison = [...matchingInitialRoutes].sort((a, b) => b.fitness - a.fitness)[0];
+            } else {
+                // Fallback: If no exact match, find one with at least the same start hub.
+                const sameStartRoutes = initialPopWithFitness.filter(ind => ind.route && ind.route[0] === startHub);
+                if (sameStartRoutes.length > 0) {
+                    initialRouteForComparison = [...sameStartRoutes].sort((a, b) => b.fitness - a.fitness)[0];
+                } else {
+                    // Last resort: just use the best overall initial route.
+                    initialRouteForComparison = initialPopWithFitness[0];
+                }
+            }
+
+            if (!initialRouteForComparison) {
+                initialRouteForComparison = bestIndividual;
+            }
+
+            updateUIs(bestIndividual, initialRouteForComparison);
+            drawRoutesOnMap(bestIndividual.route, initialRouteForComparison ? initialRouteForComparison.route : null);
+            currentGeneration++;
+            animationFrameId = requestAnimationFrame(simulationStep);
+        }
+
+        function startSimulation() { 
+            if(animationFrameId)cancelAnimationFrame(animationFrameId);
+            
+            POPULATION_SIZE = parseInt(populationSizeInput.value, 10);
+            NUM_GENERATIONS = parseInt(generationsInput.value, 10);
+            MIN_STOPS = parseInt(minStopsInput.value, 10);
+            MAX_STOPS = parseInt(maxStopsInput.value, 10);
+
+            startButton.disabled=true;
+            startButton.innerText="처리 중...";
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.classList.add('flex');
+            
+            setTimeout(()=>{
+                loadingText.innerText="실제 데이터 로딩 및 샘플링...";
+                loadRealData();
+                addHubMarkersToMap();
+                loadingText.innerText="O/D 매트릭스 보완 중...";
+                completeODMatrix();
+                loadingText.innerText="초기 노선 생성 중...";
+                population=createInitialPopulation();
+
+                if(population.length === 0){
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                    startButton.disabled = false;
+                    startButton.innerText = "오류 - 다시 시작";
+                    alert("허브 정류장을 찾지 못해 시뮬레이션을 시작할 수 없습니다. 데이터나 허브 목록을 확인해주세요.");
+                    return;
+                }
+                
+                currentGeneration=0;
+                progressBar.style.width = '0%';
+                generationInfo.textContent = `0 / ${NUM_GENERATIONS}`;
+
+                const initialMetrics=population.map(calculateRouteMetrics);
+                const initialMaxMetrics={P:Math.max(1,...initialMetrics.map(m=>m.P)),T:Math.max(1,...initialMetrics.map(m=>m.T)),D:Math.max(1,...initialMetrics.map(m=>m.D)),S:Math.max(1,...initialMetrics.map(m=>m.S)),O:Math.max(1,...initialMetrics.map(m=>m.O))};
+                initialPopWithFitness=population.map((r,i)=>({route:r,fitness:calculateFitness(initialMetrics[i],initialMaxMetrics)}));
+                
+                loadingOverlay.classList.add('hidden');
+                loadingOverlay.classList.remove('flex');
+                startButton.innerText="시뮬레이션 중...";
+                simulationStep();
+            }, 100);
+        }
+        
+        window.addEventListener('load', () => { initializeMap(); loadRealData(); addHubMarkersToMap(); });
+        startButton.addEventListener('click', startSimulation);
+
+    </script>
+</body>
+</html>
