@@ -38,10 +38,10 @@ enableEmoji = true
     # Another "title" :-). This one is used as the site_name on the Hugo's internal
     # opengraph structured data template.
     # See https://ogp.me/ and https://gohugo.io/templates/internal#open-graph.
-    title = "JIN WOO - JBNU Computer Science & Artificial Intelligence"
+    title = "JIN WOO - JBNU CSAI Student"
 
     # The "description" of your website. This is used in the meta data of your generated html.
-    description = "Science & Artificial Intelligence"
+    description = "Solo Developer"
 
     # Show a menu of languages available
     language_menu = false
@@ -52,7 +52,7 @@ enableEmoji = true
 
     # A "copyright"-line to be added at the bottom of the page.
     # Hint: Plain HTML is supported in here as well. So you may e.g. add a link to your legal imprint-page.
-    copyright = "©JINWOO KIM"
+    copyright = "©uuniz23"
 
     # This theme will, by default, inject a design-by-line at the bottom of the page.
     # You can turn it off, but we would really appreciate if you don’t :-)
@@ -75,25 +75,13 @@ enableEmoji = true
     # Show links indicated with footer_menu and footer_menu_title in the footer of the page
     showFooterLinks = false
 
-    [params.meta]
-        keywords = "some, keywords, for, seo, you, know, google, duckduckgo, and, such"
-
-    [[params.contacts]]
-        label = "phone"
-        value = "+49 1111 555555"
-        url = "tel:+49 1111 555555"
-        icon = "fa fa-phone"
-
-    [[params.contacts]]
-        label = "email"
-        value = "mail@janedoe.com"
-        url = "mailto:mail@janedoe.com"
-        icon = "fa fa-envelope"
+    #[params.meta]
+        #keywords = "some, keywords, for, seo, you, know, google, duckduckgo, and, such"
 
     [[params.contacts]]
         label = "GitHub"
-        value = "github.com/zjedi/hugo-scroll"
-        url = "https://github.com/zjedi/hugo-scroll"
+        value = "github.com/uuniz23/MyPortfolio"
+        url = "https://github.com/uuniz23/MyPortfolio"
         icon = "fa-brands fa-github"
 
     # Add additional contacts here!
