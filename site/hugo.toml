@@ -1,4 +1,4 @@
-baseURL = "https://example.com"
+baseURL = "https://uuniz23.github.io/MyPortfolio/#site-head"
 
 # This is a "one page"-website, so we do not need these kinds of pages...
 disableKinds = ["section", "taxonomy", "term", "rss", "robotsTXT"]
