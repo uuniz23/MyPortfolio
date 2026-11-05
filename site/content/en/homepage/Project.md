@@ -51,14 +51,8 @@ TOPIS, 서울 열린데이터 광장, 서울교통빅데이터플랫폼 등에�
 
 여기서 기능들을 추가하고 업그레이드 하여 실제 서울시 교통 데이터를 일부를 사용한 최종 시뮬레이션을 제작했습니다.
 
-<iframe
-  src="/MyPortfolio/simulations/hackathon/fin-sim.html"
-  title="최종 시뮬레이션 자료"
-  width="100%"
-  height="650"
-  loading="lazy"
-  style="display: block; max-width: 100%; border: 1px solid #ccc; border-radius: 8px;"
-></iframe>
+[시뮬레이션 실행하기](/MyPortfolio/simulations/hackathon/fin-sim.html)
+
 
 이후 조사 내용과 모델 구상, 적용 방안을 기획서·요약서로 정리했습니다. 7월 2일 최종 문서 작성과 필수 서류 준비를 마쳤고, 7월 4일 참가 신청과 서류 제출을 완료했습니다.
 
@@ -75,6 +69,13 @@ TOPIS, 서울 열린데이터 광장, 서울교통빅데이터플랫폼 등에�
 ### 활동 결과
 
 최종 결과물은 버스노선 개편 아이디어를 담은 **기획서와 요약서**입니다. 알고리즘 도식과 보조 시뮬레이션은 제안 내용을 설명하기 위한 자료로 제작했습니다.
+
+**제작한 기획서 중 일부 발췌**
+![기획서1](/MyPortfolio/images/design-1.png)
+![기획서2](/MyPortfolio/images/design-2.png)
+
+**제작한 요약서**
+![요약서](/MyPortfolio/images/summary.png)
 
 대회에서는 예선을 통과하지 못했습니다. 다만 문제를 선정하고, 필요한 자료를 찾아 모델을 구상한 뒤, 팀의 아이디어를 제출 가능한 문서로 완성하는 과정을 경험했습니다. 실제 서비스 운영이나 교통혼잡 감소 효과의 입증까지 진행한 활동은 아니라는 점을 구분하고자 합니다.
 
