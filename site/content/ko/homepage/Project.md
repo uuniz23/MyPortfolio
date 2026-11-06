@@ -43,13 +43,13 @@ TOPIS, 서울 열린데이터 광장, 서울교통빅데이터플랫폼 등에�
 
 최초로 개발한 시뮬레이션은 실제 서울시 교통 데이터가 아닌 샘플 데이터를 이용해서 제작했습니다.
 
-[시뮬레이션 실행하기](/MyPortfolio/simulations/hackathon/first-sim.html)
+[초기 시뮬레이션 실행하기](/MyPortfolio/simulations/hackathon/first-sim.html)
 
 *초기 시뮬레이션*
 
 여기서 기능들을 추가하고 업그레이드 하여 실제 서울시 교통 데이터를 일부를 사용한 최종 시뮬레이션을 제작했습니다.
 
-[시뮬레이션 실행하기](/MyPortfolio/simulations/hackathon/fin-sim.html)
+[최종 시뮬레이션 실행하기](/MyPortfolio/simulations/hackathon/fin-sim.html)
 
 *최종 시뮬레이션*
 
