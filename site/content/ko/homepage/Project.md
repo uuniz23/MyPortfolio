@@ -76,12 +76,14 @@ TOPIS, 서울 열린데이터 광장, 서울교통빅데이터플랫폼 등에�
 
 최종 결과물은 버스노선 개편 아이디어를 담은 **기획서와 요약서**입니다. 알고리즘 도식과 보조 시뮬레이션은 제안 내용을 설명하기 위한 자료로 제작했습니다.
 
-![기획서1](/MyPortfolio/images/design-1.png)
-![기획서2](/MyPortfolio/images/design-2.png)
+![기획서 중 1페이지 발췌, 추진배경 설명](/MyPortfolio/images/design-1.png)
+![기획서 중 4페이지 발췌, 유전 알고리즘과 적합도 함수 설명](/MyPortfolio/images/design-2.png)
+![기획서 중 5페이지 발췌, 유전 알고리즘 모델의 도식화](/MyPortfolio/images/design-3.png)
+![기획서 중 6페이지 발췌, 시뮬레이션으로 모델의 효과를 뒷받침](/MyPortfolio/images/design-4.png)
 
 ###### *제작한 기획서 중 일부 발췌*
 
-![요약서](/MyPortfolio/images/summary.png)
+![요약서 전문](/MyPortfolio/images/summary.png)
 
 ###### *제작한 요약서 전문*
 
