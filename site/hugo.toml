@@ -21,7 +21,7 @@ enableEmoji = true
 [params]
 
     # The path to your "favicon". This should be a square (at least 32px x 32px) png-file.
-    favicon = "images/favicon.png"
+    favicon = "images/favicon-32x32.png"
 
     # These "images" are used for the structured data templates. This will show up, when
     # services like Twitter or Slack want to generate a preview of a link to your site.
@@ -75,8 +75,6 @@ enableEmoji = true
     # Show links indicated with footer_menu and footer_menu_title in the footer of the page
     showFooterLinks = false
 
-    #[params.meta]
-        #keywords = "some, keywords, for, seo, you, know, google, duckduckgo, and, such"
 
     [[params.contacts]]
         label = "GitHub"
