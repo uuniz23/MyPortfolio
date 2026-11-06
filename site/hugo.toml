@@ -46,13 +46,9 @@ enableEmoji = true
     # Show a menu of languages available
     language_menu = false
 
-    # Show also a language menu item for the current language, if false only
-    # show the remaining languages
-    show_current_lang = true
-
     # A "copyright"-line to be added at the bottom of the page.
     # Hint: Plain HTML is supported in here as well. So you may e.g. add a link to your legal imprint-page.
-    copyright = "©uuniz23"
+    copyright = "@uuniz23"
 
     # This theme will, by default, inject a design-by-line at the bottom of the page.
     # You can turn it off, but we would really appreciate if you don’t :-)
