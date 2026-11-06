@@ -75,11 +75,11 @@ TOPIS, 서울 열린데이터 광장, 서울교통빅데이터플랫폼 등에�
 ![기획서 중 1페이지 발췌, 추진배경 설명](/MyPortfolio/images/design-1.png)
 ![기획서 중 4페이지 발췌, 유전 알고리즘과 적합도 함수 설명](/MyPortfolio/images/design-2.png)
 ![기획서 중 5페이지 발췌, 유전 알고리즘 모델의 도식화](/MyPortfolio/images/design-3.png)
-![기획서 중 6페이지 발췌, 시뮬레이션으로 모델의 효과를 뒷받침](/MyPortfolio/images/design-4.png)
+![기획서 중 6페이지 발췌, 제안한 노선 탐색 방식의 보조 시뮬레이션 화면](/MyPortfolio/images/design-4.png)
 
 *제작한 기획서 중 일부 발췌*
 
-![요약서 전문](/MyPortfolio/images/summary.png)
+![기획서 전체 내용에 대한 요약서](/MyPortfolio/images/summary.png)
 
 *제작한 요약서 전문*
 
