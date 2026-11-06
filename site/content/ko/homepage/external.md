@@ -1,6 +1,7 @@
 ---
 title: "그래서?"
 weight: 10
+header_menu: true
 ---
 
 ### 다음 목표
