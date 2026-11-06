@@ -39,6 +39,40 @@
 <!-- Custom link-tags for different icons
      Generated via https://favicon.io/favicon-generator/ -->
 
+<style>
+/* 첫 화면의 큰 이름 */
+#site-head .blog-title {
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+}
+
+/* Solo Developer 부제목 */
+#site-head .blog-description {
+  color: #f1f5f9;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+}
+
+/* 첫 화면 메뉴 버튼 */
+#site-head a.btn {
+  background-color: #8ac640;
+  color: #17210e;
+}
+
+/* 메뉴 버튼에 마우스를 올리거나 키보드로 선택했을 때 */
+#site-head a.btn:hover,
+#site-head a.btn:focus-visible {
+  background-color: #b0e46b;
+  color: #111827;
+}
+
+/* 아래로 이동하는 화살표 */
+#site-head #header-arrow {
+  color: #ffffff;
+}
+</style>
+
+
+
 {{ with resources.Get "images/favicon.png" }}<link rel="apple-touch-icon" sizes="180x180" href="{{ .RelPermalink }}" />{{ end }}
 {{ with resources.Get "images/favicon.svg" }}<link rel="icon" type="image/svg+xml" href="{{ .RelPermalink }}" />{{ end }}
 {{ range seq 9 4 }}{{ $size := pow 2 . }}{{ $file := replace "images/favicon-##x##.png" "##" $size }}{{ with resources.Get $file }}
