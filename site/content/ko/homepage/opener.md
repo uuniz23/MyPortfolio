@@ -1,6 +1,7 @@
 ---
 title: "안녕하세요"
 weight: 1
+header_menu: true
 ---
   
   
