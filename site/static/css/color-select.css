@@ -1,4 +1,50 @@
-/* Stage 1: selector chrome only. No site palette or background image overrides. */
+/* Preset palettes: cover image and cover text/button colors remain unchanged. */
+html[data-color-theme="forest"] {
+  --section-light-bg-color: #f3f4e8;
+  --section-light-text-color: #203b2c;
+  --section-dark-bg-color: #193d2b;
+  --section-dark-text-color: #f3f4e8;
+  --palette-light-link: #245c3a;
+  --palette-dark-link: #c0efb6;
+}
+html[data-color-theme="ocean"] {
+  --section-light-bg-color: #eaf4fa;
+  --section-light-text-color: #18354b;
+  --section-dark-bg-color: #17354f;
+  --section-dark-text-color: #eaf4fa;
+  --palette-light-link: #16557a;
+  --palette-dark-link: #b2e5ff;
+}
+html[data-color-theme="mono"] {
+  --section-light-bg-color: #f0f0f0;
+  --section-light-text-color: #292929;
+  --section-dark-bg-color: #292929;
+  --section-dark-text-color: #f0f0f0;
+  --palette-light-link: #333333;
+  --palette-dark-link: #ffffff;
+}
+/* Default deliberately has no overrides, restoring the original Hugo palette. */
+html:is([data-color-theme="forest"], [data-color-theme="ocean"], [data-color-theme="mono"]) .post-holder {
+  --content-link: var(--palette-light-link);
+  --section-uni-quote: var(--color-text);
+  --section-uni-code-bg-color: var(--section-light-bg-color);
+}
+html:is([data-color-theme="forest"], [data-color-theme="ocean"], [data-color-theme="mono"]) .post-holder.dark {
+  --content-link: var(--palette-dark-link);
+  --section-uni-code-bg-color: var(--section-dark-bg-color);
+}
+html:is([data-color-theme="forest"], [data-color-theme="ocean"], [data-color-theme="mono"]) .post-content a {
+  color: var(--content-link);
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+html:is([data-color-theme="forest"], [data-color-theme="ocean"], [data-color-theme="mono"]) .post-holder hr {
+  border-color: var(--color-text);
+}
+html:is([data-color-theme="forest"], [data-color-theme="ocean"], [data-color-theme="mono"]) .post-holder :is(a, button):focus-visible {
+  outline: 3px solid var(--content-link);
+  outline-offset: 4px;
+}
 .portfolio-color-select {
   position: fixed;
   right: max(1rem, env(safe-area-inset-right));
@@ -42,19 +88,33 @@
 .portfolio-color-panel fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .portfolio-color-panel legend { padding: 0; font-size: 1rem; font-weight: 700; color: #172033; }
 .portfolio-color-note { margin: .5rem 0 1rem; font-size: .85rem; color: #475569; }
-.portfolio-color-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.portfolio-color-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
 .portfolio-color-option {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: .5rem;
   min-height: 44px;
-  padding: .5rem;
+  padding: .75rem .5rem;
   border: 1px solid #94a3b8;
   border-radius: 6px;
   cursor: pointer;
 }
 .portfolio-color-option:has(input:checked) { outline: 2px solid #172033; outline-offset: -2px; font-weight: 700; }
-.portfolio-color-option input { flex: none; width: 18px; height: 18px; margin: 0; }
+.portfolio-color-option input { position: absolute; top: .45rem; left: .45rem; width: 18px; height: 18px; margin: 0; }
+.portfolio-color-swatch {
+  display: block;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #64748b;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--swatch-dark) 0 50%, var(--swatch-light) 50% 100%);
+}
+.portfolio-color-option[data-theme="default"] { --swatch-dark: #b80135; --swatch-light: #f2efe8; }
+.portfolio-color-option[data-theme="forest"] { --swatch-dark: #193d2b; --swatch-light: #f3f4e8; }
+.portfolio-color-option[data-theme="ocean"] { --swatch-dark: #17354f; --swatch-light: #eaf4fa; }
+.portfolio-color-option[data-theme="mono"] { --swatch-dark: #292929; --swatch-light: #f0f0f0; }
 .portfolio-color-toggle:focus-visible,
 .portfolio-color-option:focus-within,
 .portfolio-color-close:focus-visible { outline: 3px solid #1769aa; outline-offset: 3px; }

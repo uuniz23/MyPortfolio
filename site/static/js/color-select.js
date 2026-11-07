@@ -1,6 +1,4 @@
-/* Stage 1: deliberate disclosure, preset selection and persistence only.
- * Stage 2 will supply swatches and palette rules for data-color-theme.
- */
+/* Preset-only color selection. Cover/background images are never modified. */
 (() => {
   'use strict';
   const storageKey = 'portfolio-color-theme';
@@ -38,7 +36,7 @@
     legend.textContent = '본문 색상 선택';
     const note = document.createElement('p');
     note.className = 'portfolio-color-note';
-    note.textContent = '현재는 선택 기능만 제공됩니다. 색상 견본과 실제 색상 변경은 다음 단계에서 추가됩니다.';
+    note.textContent = '색상 견본을 선택하면 본문에 적용됩니다. 배경 이미지는 유지됩니다.';
     const options = document.createElement('div');
     options.className = 'portfolio-color-options';
     const status = document.createElement('p');
@@ -46,19 +44,23 @@
     status.setAttribute('role', 'status');
     function updateStatus(saved) {
       const name = presets.find(([id]) => id === selected)[1];
-      status.textContent = '선택: ' + name + (saved === false ? ' · 이 브라우저에서는 선택 저장이 제한됩니다.' : ' · 실제 색상은 아직 변경되지 않습니다.');
+      status.textContent = '현재 테마: ' + name + (saved === false ? ' · 적용됨. 이 브라우저에서는 선택 저장이 제한됩니다.' : ' · 적용됨');
     }
     for (const [id, name] of presets) {
       const label = document.createElement('label');
       label.className = 'portfolio-color-option';
+      label.dataset.theme = id;
       const radio = document.createElement('input');
       radio.type = 'radio';
       radio.name = 'portfolio-color-preset';
       radio.value = id;
       radio.checked = selected === id;
+      const swatch = document.createElement('span');
+      swatch.className = 'portfolio-color-swatch';
+      swatch.setAttribute('aria-hidden', 'true');
       const text = document.createElement('span');
       text.textContent = name;
-      label.append(radio, text);
+      label.append(radio, swatch, text);
       options.append(label);
       radio.addEventListener('change', () => {
         if (!radio.checked) return;
@@ -99,7 +101,6 @@
       }
     });
     root.addEventListener('focusout', () => {
-      // This is a non-modal panel: allow Tab to leave and close it without trapping focus.
       setTimeout(() => {
         if (!panel.hidden && !root.contains(document.activeElement)) setOpen(false);
       }, 0);
