@@ -21,9 +21,11 @@
   } catch (error) { /* Storage restrictions must not prevent page rendering. */ }
 })();
 </script>
-{{/* Content-hashed URLs prevent stage-1 CSS/JS from remaining in browser caches. */}}
+{{/* Content-hashed URLs prevent outdated CSS/JS from remaining in browser caches. */}}
 {{ $colorCSS := resources.FromString "css/color-select.css" (readFile "static/css/color-select.css") | fingerprint }}
 <link rel="stylesheet" href="{{ $colorCSS.RelPermalink }}" integrity="{{ $colorCSS.Data.Integrity }}">
+{{ $labelCSS := resources.FromString "css/color-select-labels.css" (readFile "static/css/color-select-labels.css") | fingerprint }}
+<link rel="stylesheet" href="{{ $labelCSS.RelPermalink }}" integrity="{{ $labelCSS.Data.Integrity }}">
 {{ $colorJS := resources.FromString "js/color-select.js" (readFile "static/js/color-select.js") | fingerprint }}
 <script src="{{ $colorJS.RelPermalink }}" integrity="{{ $colorJS.Data.Integrity }}" defer></script>
 {{/* Apply section colors explicitly, without relying only on inherited theme aliases. */}}
