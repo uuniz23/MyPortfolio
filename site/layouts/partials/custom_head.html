@@ -1,46 +1,16 @@
-
 <style>
-/* 첫 화면의 큰 이름 */
-#site-head .blog-title {
-  color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
-}
-
-/* Solo Developer 부제목 */
-#site-head .blog-description {
-  color: #f1f5f9;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
-}
-
-/* 첫 화면 메뉴 버튼 */
-#site-head a.btn {
-  background-color: #8ac640;
-  color: #17210e;
-}
-
-/* 메뉴 버튼에 마우스를 올리거나 키보드로 선택했을 때 */
-#site-head a.btn:hover,
-#site-head a.btn:focus-visible {
-  background-color: #b0e46b;
-  color: #111827;
-}
-
-/* 아래로 이동하는 화살표 */
-#site-head #header-arrow {
-  color: #ffffff;
-}
+#site-head .blog-title { color: #ffffff; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65); }
+#site-head .blog-description { color: #f1f5f9; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.65); }
+#site-head a.btn { background-color: #8ac640; color: #17210e; }
+#site-head a.btn:hover, #site-head a.btn:focus-visible { background-color: #b0e46b; color: #111827; }
+#site-head #header-arrow { color: #ffffff; }
 </style>
-
 {{ with resources.Get "images/apple-favicon.png" }}<link rel="apple-favicon" sizes="180x180" href="{{ .RelPermalink }}" />{{ end }}
 {{ with resources.Get "images/favicon.svg" }}<link rel="icon" type="image/svg+xml" href="{{ .RelPermalink }}" />{{ end }}
 {{ range seq 9 4 }}{{ $size := pow 2 . }}{{ $file := replace "images/favicon-##x##.png" "##" $size }}{{ with resources.Get $file }}
 <link rel="icon" type="{{ .MediaType.Type }}" sizes="{{- $size -}}x{{- $size -}}" href="{{ .RelPermalink }}" />{{ end }}{{ end }}
-
-<!-- 본문 이미지 확대: 독립 CSS/JS로 관리 -->
 <link rel="stylesheet" href='{{ "css/image-viewer.css" | relURL }}'>
 <script src='{{ "js/image-viewer.js" | relURL }}' defer></script>
-
-<!-- 본문 표시 전에 저장된 색상 선택 복원; 저장소 접근 실패 시 기본 테마 유지 -->
 <script>
 (function () {
   try {
@@ -48,8 +18,28 @@
     if (['default', 'forest', 'ocean', 'mono'].indexOf(theme) !== -1) {
       document.documentElement.setAttribute('data-color-theme', theme);
     }
-  } catch (error) { /* 저장이 제한되어도 기본 화면은 정상 표시 */ }
+  } catch (error) { /* Storage restrictions must not prevent page rendering. */ }
 })();
 </script>
-<link rel="stylesheet" href='{{ "css/color-select.css" | relURL }}'>
-<script src='{{ "js/color-select.js" | relURL }}' defer></script>
+{{/* Content-hashed URLs prevent stage-1 CSS/JS from remaining in browser caches. */}}
+{{ $colorCSS := resources.FromString "css/color-select.css" (readFile "static/css/color-select.css") | fingerprint }}
+<link rel="stylesheet" href="{{ $colorCSS.RelPermalink }}" integrity="{{ $colorCSS.Data.Integrity }}">
+{{ $colorJS := resources.FromString "js/color-select.js" (readFile "static/js/color-select.js") | fingerprint }}
+<script src="{{ $colorJS.RelPermalink }}" integrity="{{ $colorJS.Data.Integrity }}" defer></script>
+{{/* Apply section colors explicitly, without relying only on inherited theme aliases. */}}
+<style>
+{{ range $name, $palette := dict "forest" (slice "#f3f4e8" "#203b2c" "#193d2b" "#f3f4e8") "ocean" (slice "#eaf4fa" "#18354b" "#17354f" "#eaf4fa") "mono" (slice "#f0f0f0" "#292929" "#292929" "#f0f0f0") }}
+html[data-color-theme="{{ $name }}"] .post-holder:not(.dark) {
+  --color-background: {{ index $palette 0 | safeCSS }};
+  --color-text: {{ index $palette 1 | safeCSS }};
+  background-color: {{ index $palette 0 | safeCSS }};
+  color: {{ index $palette 1 | safeCSS }};
+}
+html[data-color-theme="{{ $name }}"] .post-holder.dark {
+  --color-background: {{ index $palette 2 | safeCSS }};
+  --color-text: {{ index $palette 3 | safeCSS }};
+  background-color: {{ index $palette 2 | safeCSS }};
+  color: {{ index $palette 3 | safeCSS }};
+}
+{{ end }}
+</style>
