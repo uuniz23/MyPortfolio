@@ -1,0 +1,62 @@
+/* Stage 1: selector chrome only. No site palette or background image overrides. */
+.portfolio-color-select {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 1000;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #172033;
+}
+.portfolio-color-toggle {
+  display: block;
+  margin-left: auto;
+  padding: .65rem 1rem;
+  min-height: 44px;
+  border: 1px solid #64748b;
+  border-radius: 6px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+  cursor: pointer;
+}
+.portfolio-color-toggle:hover { text-decoration: underline; }
+.portfolio-color-panel {
+  box-sizing: border-box;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + .6rem);
+  width: min(320px, calc(100vw - 2rem));
+  max-height: 65vh;
+  max-height: 65dvh;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid #64748b;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.2);
+  background: #fff;
+  color: #172033;
+}
+.portfolio-color-panel[hidden] { display: none; }
+.portfolio-color-panel fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.portfolio-color-panel legend { padding: 0; font-size: 1rem; font-weight: 700; color: #172033; }
+.portfolio-color-note { margin: .5rem 0 1rem; font-size: .85rem; color: #475569; }
+.portfolio-color-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+.portfolio-color-option {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 44px;
+  padding: .5rem;
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.portfolio-color-option:has(input:checked) { outline: 2px solid #172033; outline-offset: -2px; font-weight: 700; }
+.portfolio-color-option input { flex: none; width: 18px; height: 18px; margin: 0; }
+.portfolio-color-toggle:focus-visible,
+.portfolio-color-option:focus-within,
+.portfolio-color-close:focus-visible { outline: 3px solid #1769aa; outline-offset: 3px; }
+.portfolio-color-status { margin: .8rem 0; font-size: .85rem; color: #172033; }
+.portfolio-color-close { padding: .5rem .75rem; min-height: 44px; border: 1px solid #64748b; border-radius: 4px; background: #f1f5f9; color: #172033; font: inherit; cursor: pointer; }
