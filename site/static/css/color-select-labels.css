@@ -1,0 +1,10 @@
+/* Match the Hugo Scroll navigation/headings without changing site content. */
+.portfolio-color-select,
+.portfolio-color-toggle,
+.portfolio-color-panel,
+.portfolio-color-option {
+  font-family: 'Open Sans Condensed', 'Open Sans', sans-serif;
+  font-weight: 700;
+}
+.portfolio-color-select { letter-spacing: .02em; }
+.portfolio-color-option > span:last-child { font-size: 16px; line-height: 1.4; }
