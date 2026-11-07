@@ -53,13 +53,73 @@ Hugo Scroll 템플릿을 활용해 제작한 개인 포트폴리오 웹사이트
 | `.github/workflows/hugo-pages.yml` | 사이트 빌드·배포 워크플로 |
 | `LICENSE` | 원본 테마 라이선스 |
 
-## 수정 및 배포 방식
+## 빌드 재현 및 확인 방법
 
-콘텐츠는 `site/content/ko/`의 Markdown 파일에서 관리하고, 사이트 기본 정보는 `site/hugo.toml`에서 설정합니다. 화면 디자인은 템플릿과 CSS를 통해 조정합니다.
+이 사이트의 운영 방식은 GitHub Actions를 통한 GitHub Pages 배포입니다. 별도 로컬 배포는 필요하지 않습니다. 아래는 저장소에 기록된 자동 설치·빌드 절차를 이용하는 재현 방법입니다.
 
-변경 사항은 하나의 목적을 가진 작업 단위로 커밋합니다. `main` 브랜치에 push하면 GitHub Actions의 빌드·배포 절차를 거쳐 GitHub Pages에 반영됩니다. 배포에 사용하는 도구 버전과 세부 절차는 [배포 워크플로](.github/workflows/hugo-pages.yml)에 기록되어 있습니다.
+### 도구 버전과 설치 절차
 
-공개 사이트의 기준 주소는 `https://uuniz23.github.io/MyPortfolio/`이며, 정적 파일의 공개 경로에는 저장소 내부의 `site/static/`을 포함하지 않습니다.
+[배포 워크플로](.github/workflows/hugo-pages.yml)는 다음 환경을 자동으로 준비합니다.
+
+| 도구 | 지정 버전·설치 방식 |
+|---|---|
+| 실행 환경 | GitHub Actions의 `ubuntu-latest` |
+| Python | `3.12` — `actions/setup-python`으로 설치 |
+| Node.js / npm | Node.js `24` — `actions/setup-node`로 설치, npm 포함 |
+| Go | `1.27.1` — `actions/setup-go`로 설치 |
+| Hugo | Extended `0.167.0` — 공식 GitHub Releases의 Linux amd64 배포 파일 다운로드·압축 해제 후 PATH 등록 |
+| Dart Sass | `1.105.0` — 공식 GitHub Releases의 Linux x64 배포 파일 다운로드·압축 해제 후 PATH 등록 |
+| 추가 의존성 | `.github/pages_build.py --dependencies`로 필요한 npm 패키지 등을 설치 |
+
+Hugo Scroll 테마는 `site/themes/template/`에 포함되어 있습니다. 의존성 준비와 빌드에는 저장소에 포함된 `.github/pages_build.py` 버전 `3.1`을 사용합니다. 세부 다운로드 명령과 설치 순서는 워크플로의 `Install Hugo and Sass`, `Prepare dependencies` 단계를 기준으로 합니다.
+
+### GitHub Actions에서 재현하기
+
+1. 이 공개 저장소를 열고 **Actions → Deploy Hugo to GitHub Pages → Run workflow**에서 `main`을 선택해 실행합니다. 실행에는 저장소의 쓰기 권한이 필요합니다. 권한이 없는 경우 저장소를 본인 계정으로 포크한 뒤, **Settings → Pages → Source**를 **GitHub Actions**로 설정하고 실행합니다. 포크에서는 워크플로 실행도 활성화합니다.
+2. 워크플로가 저장소를 체크아웃하고 위 도구들을 설치합니다.
+3. 저장소 루트에서 다음 명령을 순서대로 실행해 의존성을 준비하고 사이트를 빌드합니다. 아래 명령은 워크플로에 포함된 실제 명령이며, `SITE_BASE_URL`은 `actions/configure-pages`가 제공한 Pages 주소로 설정됩니다.
+
+```bash
+python .github/pages_build.py --dependencies
+python .github/pages_build.py --build
+```
+
+4. `Build and fix project URL paths` 단계가 성공하면 루트의 `public/index.html`을 포함한 정적 사이트가 생성됩니다. 빌드 스크립트는 홈페이지 생성 여부를 검사하고 프로젝트 하위 경로를 보정합니다.
+5. 생성 결과는 Pages 아티팩트로 업로드되고 `deploy` 작업에서 공개됩니다. 실행 상세 화면의 배포 주소를 열어 사이트를 확인합니다. 포크에서 재현한 경우 원본 주소가 아닌 해당 실행에 표시된 본인 Pages 주소를 사용합니다.
+
+이 절차는 별도 서버를 설치해 운영하는 방식이 아니라, 저장소의 자동 설치·빌드·배포를 다시 실행하는 방식입니다. 수동 실행 외에도 `main` push가 같은 워크플로를 자동으로 시작합니다.
+
+## 수정 및 재배포 방법
+
+### 수정할 파일
+
+- 첫 화면 제목과 문구: `site/content/ko/_index.md`
+- 자기소개: `site/content/ko/homepage/about-me.md`
+- 해커톤 활동 소개: `site/content/ko/homepage/Project.md`
+- 기타 홈페이지 섹션: `site/content/ko/homepage/`의 해당 Markdown 파일
+- 사이트 제목·언어·연락처: `site/hugo.toml`
+- 화면 디자인: `site/layouts/`의 사용자 정의 템플릿 및 해당 스타일 파일
+- 공개 이미지 등 정적 파일: `site/static/`
+
+섹션 메뉴 노출은 해당 Markdown 파일의 `header_menu`, 순서는 `weight` 설정으로 관리합니다. 공개 사이트의 기준 주소는 `https://uuniz23.github.io/MyPortfolio/`이며, 정적 파일의 공개 경로에는 저장소 내부의 `site/static/`을 포함하지 않습니다.
+
+### 커밋·push 및 반영 확인
+
+1. 수정 사항을 확인하고 하나의 목적을 가진 작업 단위로 커밋합니다. 로컬 Git을 사용하는 경우 저장소 루트에서 다음과 같이 실행합니다. 아래 예시는 자기소개 파일을 수정한 경우입니다.
+
+```bash
+git switch main
+git add site/content/ko/homepage/about-me.md
+git commit -m "docs: 자기소개 내용 수정"
+git push origin main
+```
+
+2. [Actions 실행 목록](https://github.com/uuniz23/MyPortfolio/actions)에서 해당 push로 시작된 **Deploy Hugo to GitHub Pages** 실행을 엽니다.
+3. 실행 대상 브랜치가 `main`이고 커밋 SHA가 방금 push한 커밋과 일치하는지 확인합니다. `build`와 `deploy` 작업이 모두 성공해야 배포 완료입니다.
+4. 실패한 경우 실패 단계의 로그를 확인하고, 원인을 수정해 다시 commit·push합니다. 이전 실행이 성공했다는 사실만으로 새 변경이 배포되었다고 판단하지 않습니다.
+5. 성공 후 [공개 사이트](https://uuniz23.github.io/MyPortfolio/)를 새로고침하여 수정한 문구·이미지·메뉴가 실제로 반영되었는지 확인합니다. 변경한 링크를 누르고 목적지와 이미지 표시도 함께 확인합니다.
+
+GitHub 웹 편집기를 사용하는 경우에도 변경을 `main`에 커밋하면 같은 자동 배포가 실행됩니다.
 
 ## 출처 및 제작 안내
 
